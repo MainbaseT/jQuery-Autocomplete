@@ -256,6 +256,25 @@ $('#autocomplete').autocomplete({
 });
 ```
 
+`transformResult` receives the raw payload `$.ajax` resolved with, so its
+type is up to your service. In TypeScript you can annotate the parameter
+with your own response shape:
+
+```ts
+interface MyResponse {
+    myData: { valueField: string; dataField: number }[];
+}
+
+$('#autocomplete').autocomplete({
+    transformResult: (response: MyResponse) => ({
+        suggestions: response.myData.map((item) => ({
+            value: item.valueField,
+            data: item.dataField,
+        })),
+    }),
+});
+```
+
 ## Grouping results
 
 Set `groupBy` to a property name on `suggestion.data` to render group

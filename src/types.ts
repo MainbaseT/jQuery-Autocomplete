@@ -21,10 +21,11 @@ export type LookupFilter = (
     queryLowerCase: string
 ) => boolean;
 
-export type TransformResult = (
-    response: string | AutocompleteResponse,
-    originalQuery: string
-) => AutocompleteResponse;
+// `response` is whatever `$.ajax` resolved with — its shape is defined by the
+// consumer's server, not by us, and jQuery itself types it as `any`. `unknown`
+// won't do: it rejects both `response.myData` on an unannotated parameter and a
+// consumer-annotated `(response: MyResponse) => ...` (parameter contravariance).
+export type TransformResult = (response: any, originalQuery: string) => AutocompleteResponse;
 
 export type FormatResult = (suggestion: Suggestion, currentValue: string, index?: number) => string;
 
