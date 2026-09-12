@@ -168,6 +168,62 @@ describe("Autocomplete Async — transformResult", () => {
     });
 });
 
+// The default dataType is "text", so a custom transformResult is handed the raw
+// response string. With dataType: "json" jQuery parses first and the callback
+// sees an object — the form the readme documents for non-standard payloads.
+describe("Autocomplete Async — transformResult with dataType json", () => {
+    let instance;
+    let receivedType;
+
+    beforeEach(async () => {
+        await new Promise((resolve) => {
+            const input = document.createElement("input");
+            const url = "/test-transform-json";
+            const autocomplete = new $.Autocomplete(input, {
+                serviceUrl: url,
+                dataType: "json",
+                transformResult: function (response) {
+                    receivedType = typeof response;
+                    setTimeout(resolve, 0);
+
+                    return {
+                        suggestions: response.myData.map(function (item) {
+                            return { value: item.valueField, data: item.dataField };
+                        }),
+                    };
+                },
+            });
+
+            $.mockjax({
+                url,
+                responseTime: 50,
+                contentType: "application/json",
+                responseText: {
+                    myData: [
+                        { valueField: "Canada", dataField: "CA" },
+                        { valueField: "Cameroon", dataField: "CM" },
+                    ],
+                },
+            });
+
+            instance = autocomplete;
+
+            input.value = "C";
+            autocomplete.onValueChange();
+        });
+    });
+
+    it("Should hand transformResult a parsed object", () => {
+        expect(receivedType).toBe("object");
+    });
+
+    it("Should map a non-standard payload onto suggestions", () => {
+        expect(instance.suggestions.length).toBe(2);
+        expect(instance.suggestions[0].value).toBe("Canada");
+        expect(instance.suggestions[0].data).toBe("CA");
+    });
+});
+
 describe("Autocomplete Async — optional server query field", () => {
     let instance;
 

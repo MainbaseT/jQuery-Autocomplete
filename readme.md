@@ -245,6 +245,7 @@ non-standard payload, use `paramName` and `transformResult`:
 ```js
 $('#autocomplete').autocomplete({
     paramName: 'searchString',
+    dataType: 'json',
     transformResult: function (response) {
         return {
             suggestions: response.myData.map((item) => ({
@@ -256,9 +257,22 @@ $('#autocomplete').autocomplete({
 });
 ```
 
-`transformResult` receives the raw payload `$.ajax` resolved with, so its
-type is up to your service. In TypeScript you can annotate the parameter
-with your own response shape:
+**`dataType: 'json'` matters here.** `transformResult` receives whatever
+`$.ajax` resolved with, and the default `dataType` is `'text'` — so
+without it your callback is handed the raw response **string**, and
+`response.myData` is `undefined`. (The built-in `transformResult` copes by
+running `JSON.parse` on string input; a custom one replaces that.) Either
+set `dataType: 'json'` and let jQuery parse, or parse it yourself:
+
+```js
+transformResult: function (response) {
+    const parsed = typeof response === 'string' ? JSON.parse(response) : response;
+    return { suggestions: parsed.myData.map(/* … */) };
+}
+```
+
+In TypeScript the parameter is typed loosely, since only your service
+knows the payload shape — annotate it with your own type:
 
 ```ts
 interface MyResponse {
@@ -266,6 +280,7 @@ interface MyResponse {
 }
 
 $('#autocomplete').autocomplete({
+    dataType: 'json',
     transformResult: (response: MyResponse) => ({
         suggestions: response.myData.map((item) => ({
             value: item.valueField,

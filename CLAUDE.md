@@ -61,7 +61,8 @@ The minified UMD is ~13 KB; the unminified is ~26 KB.
 1. Bump `version` in `package.json`.
 2. `npm install --package-lock-only` — keeps the lockfile's own `version` field in step. Easy to forget; 2.0.5 shipped with a lockfile still claiming 2.0.4 (harmless — `npm ci` doesn't validate it and the tarball excludes it — but it drifts).
 3. `npm run build` — propagates the new version into the banner of each `dist/` JS file (via the build script) and syncs `devbridge-autocomplete.jquery.json`.
-4. Commit as `chore(release): <version>`, then tag `v<version>` and push the tag — `.github/workflows/release.yml` fires on `v*`, re-runs the full CI sweep, publishes to npm with provenance (OIDC, no token), and opens the GitHub Release. Registry propagation lags the workflow by a minute or two, so `npm view` can still report the previous version right after a green run — confirm against `https://registry.npmjs.org/devbridge-autocomplete` before assuming the publish failed.
+4. Update the version stamp in `docs/index.htm` (the `stamp__big` / `stamp__line3` spans, around line 33) — it's hand-maintained and visible on the live demo, so it drifts silently. It sat at 2.0.2 while npm was on 2.0.5.
+5. Commit as `chore(release): <version>`, then tag `v<version>` and push the tag — `.github/workflows/release.yml` fires on `v*`, re-runs the full CI sweep, publishes to npm with provenance (OIDC, no token), and opens the GitHub Release. Registry propagation lags the workflow by a minute or two, so `npm view` can still report the previous version right after a green run — confirm against `https://registry.npmjs.org/devbridge-autocomplete` before assuming the publish failed.
 
 ## Updating dependencies
 
