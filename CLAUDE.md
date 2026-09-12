@@ -38,9 +38,11 @@ TypeScript source under `src/` (~700 lines split into ~8 modules) compiles to a 
 
 Vitest + jsdom, headless. Specs live in `test/autocomplete.test.js`. `test/setup.js` attaches a single jQuery instance to `globalThis` / the jsdom `window`, registers `jquery-mockjax`, silences mockjax's per-request console logging, then calls `installAutocomplete(jQuery)` directly (bypassing the UMD wrapper). All test code shares one jQuery instance, one DOM, one set of plugin registrations.
 
-`vitest.config.js` pins `pool: "forks"` with `isolate: false`. **Don't change either.** `threads` pool starved the worker handshake once we moved to TS source (esbuild transform overhead pushed startup past the 60s timeout). `isolate: false` keeps every spec in one process — same shared-module-state model the original Jasmine runner used, so describe blocks that mutate global jQuery state stay consistent.
+`vitest.config.mjs` pins `pool: "forks"` with `isolate: false`. **Don't change either.** `threads` pool starved the worker handshake once we moved to TS source (esbuild transform overhead pushed startup past the 60s timeout). `isolate: false` keeps every spec in one process — same shared-module-state model the original Jasmine runner used, so describe blocks that mutate global jQuery state stay consistent.
 
 To run a single test: `npx vitest run -t "test name substring"` or temporarily `describe.only` / `it.only`.
+
+The suite runs against the `jquery` devDependency, currently **4.0.0** — while the published peer range is `>=3.0`. jQuery 3.x is therefore supported but not exercised by CI; a version matrix would close that gap. The `overrides` block in `package.json` exists because `jquery-mockjax@3` declares four jQuery peer aliases (`jquery1`/`jquery2`/`jquery3`/`jquery4`) so it can self-test against every major; left alone, npm installs four jQuery copies including 1.x/2.x, which Dependabot flags for XSS. All four aliases are overridden to the one jQuery we test with, so exactly one copy lands in the tree. Keep them in sync when the `jquery` devDependency moves.
 
 The demo page `docs/index.htm` is the manual test surface (Ajax lookup, local lookup with grouping, custom container, dynamic width) **and** the live demo published at https://tkirda.github.io/jQuery-Autocomplete/ via GitHub Pages (configured to serve from `master/docs`). It loads jQuery, mockjax, and the plugin itself from CDN (`cdn.jsdelivr.net/npm/devbridge-autocomplete@2/...`); open in a browser.
 
@@ -57,7 +59,13 @@ The minified UMD is ~13 KB; the unminified is ~26 KB.
 ## Release/version flow
 
 1. Bump `version` in `package.json`.
-2. `npm run build` — propagates the new version into the banner of each `dist/` JS file (via the build script) and syncs `devbridge-autocomplete.jquery.json`.
+2. `npm install --package-lock-only` — keeps the lockfile's own `version` field in step. Easy to forget; 2.0.5 shipped with a lockfile still claiming 2.0.4 (harmless — `npm ci` doesn't validate it and the tarball excludes it — but it drifts).
+3. `npm run build` — propagates the new version into the banner of each `dist/` JS file (via the build script) and syncs `devbridge-autocomplete.jquery.json`.
+4. Commit as `chore(release): <version>`, then tag `v<version>` and push the tag — `.github/workflows/release.yml` fires on `v*`, re-runs the full CI sweep, publishes to npm with provenance (OIDC, no token), and opens the GitHub Release. Registry propagation lags the workflow by a minute or two, so `npm view` can still report the previous version right after a green run — confirm against `https://registry.npmjs.org/devbridge-autocomplete` before assuming the publish failed.
+
+## Updating dependencies
+
+**npm 10 cannot resolve this tree.** Both `npm audit fix` and `npm update` die with `Cannot read properties of null (reading 'edgesOut')` — an arborist bug triggered by the aliased `overrides` block. Use `npx --yes npm@11 <command>` for anything that rebuilds the ideal tree (`install`, `update`, `audit fix`). `npm ci` reifies straight from the lockfile and works on both, so CI (Node 20 / npm 10) is unaffected.
 
 ## Architecture notes that aren't obvious from a glance
 

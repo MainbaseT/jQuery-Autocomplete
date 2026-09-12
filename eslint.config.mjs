@@ -6,7 +6,7 @@ import js from '@eslint/js';
 export default [
     js.configs.recommended,
     {
-        files: ['test/**/*.js', 'vitest.config.js'],
+        files: ['test/**/*.js', 'vitest.config.mjs'],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: 'module',
